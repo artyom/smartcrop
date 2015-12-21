@@ -34,6 +34,7 @@ import (
 	"errors"
 	"image"
 	"image/color"
+	"io/ioutil"
 	"log"
 	"math"
 	"time"
@@ -91,6 +92,7 @@ type Crop struct {
 type CropSettings struct {
 	InterpolationType resize.InterpolationFunction
 	DebugMode         bool
+	Log               *log.Logger
 }
 
 //Analyzer interface analyzes its struct
@@ -110,6 +112,7 @@ func NewAnalyzer() Analyzer {
 	cropSettings := CropSettings{
 		InterpolationType: resize.Bicubic,
 		DebugMode:         false,
+		Log:               log.New(ioutil.Discard, "", 0),
 	}
 
 	return &standardAnalyzer{cropSettings: cropSettings}
@@ -117,10 +120,14 @@ func NewAnalyzer() Analyzer {
 
 //NewAnalyzerWithCropSettings returns a new analyzer with the given settings
 func NewAnalyzerWithCropSettings(cropSettings CropSettings) Analyzer {
+	if cropSettings.Log == nil {
+		cropSettings.Log = log.New(ioutil.Discard, "", 0)
+	}
 	return &standardAnalyzer{cropSettings: cropSettings}
 }
 
 func (o standardAnalyzer) FindBestCrop(img image.Image, width, height int) (Crop, error) {
+	log := o.cropSettings.Log
 	if width == 0 && height == 0 {
 		return Crop{}, errors.New("Expect either a height or width")
 	}
@@ -279,6 +286,7 @@ func drawDebugCrop(topCrop *Crop, o *image.Image) {
 }
 
 func analyse(settings CropSettings, img image.Image, cropWidth, cropHeight, realMinScale float64) (Crop, error) {
+	log := settings.Log
 	o := image.Image(image.NewRGBA(img.Bounds()))
 
 	now := time.Now()
