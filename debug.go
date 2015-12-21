@@ -35,6 +35,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"path/filepath"
 )
 
 func debugOutput(debug bool, img *image.Image, debugType string) {
@@ -44,6 +45,9 @@ func debugOutput(debug bool, img *image.Image, debugType string) {
 }
 
 func writeImageToJpeg(img *image.Image, name string) {
+	if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {
+		panic(err)
+	}
 	fso, err := os.Create(name)
 	if err != nil {
 		panic(err)
