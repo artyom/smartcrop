@@ -25,8 +25,8 @@
  */
 
 /*
-Package smartcrop implements a content aware image cropping library based on
-Jonas Wagner's smartcrop.js https://github.com/jwagner/smartcrop.js
+Package smartcrop is a pure-Go implementation of content aware image cropping
+based on Jonas Wagner's smartcrop.js https://github.com/jwagner/smartcrop.js
 */
 package smartcrop
 
