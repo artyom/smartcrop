@@ -39,9 +39,9 @@ import (
 	"math"
 	"time"
 
-	"golang.org/x/image/draw"
+	"github.com/bamiaux/rez"
 
-	"github.com/nfnt/resize"
+	"golang.org/x/image/draw"
 )
 
 var skinColor = [3]float64{0.78, 0.57, 0.44}
@@ -92,9 +92,8 @@ type cropInfo struct {
 //CropSettings contains options to
 //change cropping behaviour
 type CropSettings struct {
-	InterpolationType resize.InterpolationFunction
-	DebugMode         bool
-	Log               *log.Logger
+	DebugMode bool
+	Log       *log.Logger
 }
 
 //Analyzer interface analyzes its struct
@@ -112,9 +111,8 @@ type standardAnalyzer struct {
 //NewAnalyzer returns a new analyzer with default settings
 func NewAnalyzer() Analyzer {
 	cropSettings := CropSettings{
-		InterpolationType: resize.Bicubic,
-		DebugMode:         false,
-		Log:               log.New(ioutil.Discard, "", 0),
+		DebugMode: false,
+		Log:       log.New(ioutil.Discard, "", 0),
 	}
 
 	return &standardAnalyzer{cropSettings: cropSettings}
@@ -150,12 +148,17 @@ func (o standardAnalyzer) FindBestCrop(img image.Image, width, height int) (imag
 		}
 		log.Println(prescalefactor)
 
-		smallImg := resize.Resize(
-			uint(float64(img.Bounds().Size().X)*prescalefactor),
-			0,
-			img,
-			o.cropSettings.InterpolationType)
-		lowimg = toRGBA(smallImg)
+		rect := image.Rect(0, 0, int(float64(img.Bounds().Dx())*prescalefactor),
+			int(float64(img.Bounds().Dy())*prescalefactor))
+		lowimg = image.NewRGBA(rect)
+		switch img.(type) {
+		case *image.YCbCr, *image.RGBA, *image.NRGBA, *image.Gray:
+			if err := rez.Convert(lowimg, img, rez.NewBilinearFilter()); err != nil {
+				draw.ApproxBiLinear.Scale(lowimg, lowimg.Bounds(), img, img.Bounds(), draw.Src, nil)
+			}
+		default:
+			draw.ApproxBiLinear.Scale(lowimg, lowimg.Bounds(), img, img.Bounds(), draw.Src, nil)
+		}
 	} else {
 		lowimg = toRGBA(img)
 	}
