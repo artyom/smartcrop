@@ -34,13 +34,13 @@ import (
 	"path/filepath"
 )
 
-func debugOutput(debug bool, img *image.Image, debugType string) {
+func debugOutput(debug bool, img *image.RGBA, debugType string) {
 	if debug {
 		writeImageToPng(img, "./smartcrop_"+debugType+".png")
 	}
 }
 
-func writeImageToJpeg(img *image.Image, name string) {
+func writeImageToJpeg(img image.Image, name string) {
 	if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {
 		panic(err)
 	}
@@ -50,15 +50,15 @@ func writeImageToJpeg(img *image.Image, name string) {
 	}
 	defer fso.Close()
 
-	jpeg.Encode(fso, (*img), &jpeg.Options{Quality: 100})
+	jpeg.Encode(fso, img, &jpeg.Options{Quality: 100})
 }
 
-func writeImageToPng(img *image.Image, name string) {
+func writeImageToPng(img image.Image, name string) {
 	fso, err := os.Create(name)
 	if err != nil {
 		panic(err)
 	}
 	defer fso.Close()
 
-	png.Encode(fso, (*img))
+	png.Encode(fso, img)
 }

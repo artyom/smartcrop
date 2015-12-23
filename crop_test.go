@@ -47,7 +47,10 @@ type SubImager interface {
 }
 
 func TestCrop(t *testing.T) {
-	fi, _ := os.Open(testFile)
+	fi, err := os.Open(testFile)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer fi.Close()
 
 	img, _, err := image.Decode(fi)
@@ -55,35 +58,40 @@ func TestCrop(t *testing.T) {
 		t.Error(err)
 	}
 
-	topCrop, err := SmartCrop(img, 250, 0)
+	topCrop, err := SmartCrop(img, 250, 250)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("Top crop: %+v\n", topCrop)
+	t.Logf("Top crop: %+v", topCrop)
 
-	sub, ok := img.(SubImager)
-	if ok {
-		cropImage := sub.SubImage(image.Rect(topCrop.X, topCrop.Y, topCrop.Width+topCrop.X, topCrop.Height+topCrop.Y))
-		writeImageToJpeg(&cropImage, "./smartcrop.jpg")
-
-	} else {
-		t.Error(errors.New("No SubImage support"))
-	}
-
+	/*
+		sub, ok := img.(SubImager)
+		if ok {
+			cropImage := sub.SubImage(topCrop)
+			writeImageToJpeg(cropImage, "./smartcrop.jpg")
+		} else {
+			t.Error(errors.New("No SubImage support"))
+		}
+	*/
 }
 
 func BenchmarkEdge(b *testing.B) {
 	fname := "24391757.jpg"
-	fi, _ := os.Open("./samples/" + fname)
+	fi, err := os.Open("./samples/" + fname)
+	if err != nil {
+		b.Fatal(err)
+	}
 	defer fi.Close()
 	img, _, err := image.Decode(fi)
 	if err != nil {
 		b.Error(err)
 	}
-	o := image.Image(image.NewRGBA(img.Bounds()))
+	rgbaImg := toRGBA(img)
+	b.Logf("%T", img)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		edgeDetect(img, o)
+		o := image.NewRGBA(img.Bounds())
+		edgeDetect(rgbaImg, o)
 	}
 }
 
@@ -117,8 +125,8 @@ func BenchmarkImageDir(b *testing.B) {
 			sub, ok := img.(SubImager)
 			//sub, ok := img.(SubImager)
 			if ok {
-				cropImage := sub.SubImage(image.Rect(topCrop.X, topCrop.Y, topCrop.Width+topCrop.X, topCrop.Height+topCrop.Y))
-				writeImageToJpeg(&cropImage, "/tmp/smartcrop/smartcrop-"+file.Name())
+				cropImage := sub.SubImage(topCrop)
+				writeImageToJpeg(cropImage, "/tmp/smartcrop/smartcrop-"+file.Name())
 			} else {
 				b.Error(errors.New("No SubImage support"))
 			}

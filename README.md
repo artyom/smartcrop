@@ -19,30 +19,47 @@ Image: [https://www.flickr.com/photos/usfwspacific/8182486789](https://www.flick
 package main
 
 import (
-	"github.com/artyom/smartcrop"
-	"fmt"
 	"image"
-	_ "image/png"
+	"image/png"
+	"log"
 	"os"
+
+	"github.com/artyom/smartcrop"
 )
 
 func main() {
-  fi,err := os.Open("test.png")
-  if err != nil {
-    log.Fatalf(err.Error())
-  }
+	fi, err := os.Open("test.png")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 
-  defer fi.Close()
+	defer fi.Close()
 
-  img, _, err := image.Decode(fi)
-  if err != nil {
-    log.Fatalf(err.Error())
-  }
+	img, _, err := image.Decode(fi)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	rect, err := smartcrop.SmartCrop(img, 250, 250)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("cropping from %v to %v", img.Bounds(), rect)
 
-  analyzer := smartcrop.NewAnalyzer()
-	topCrop, _ := analyzer.FindBestCrop(img, 250, 250)
-	fmt.Printf("Top crop: %+v\n", topCrop)
+	if si, ok := img.(subimager); ok {
+		of, err := os.Create("output.png")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer of.Close()
+		if err := png.Encode(of, si.SubImage(rect)); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+type subimager interface {
+	SubImage(image.Rectangle) image.Image
 }
 ```
 
-Also see the test-cases in crop_test.go for further working examples.
+Also see the test cases in crop_test.go for further working examples.
