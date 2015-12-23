@@ -87,7 +87,6 @@ func BenchmarkEdge(b *testing.B) {
 		b.Error(err)
 	}
 	rgbaImg := toRGBA(img)
-	b.Logf("%T", img)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		o := image.NewRGBA(img.Bounds())
