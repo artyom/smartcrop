@@ -113,6 +113,7 @@ func NewAnalyzer() Analyzer {
 	cropSettings := CropSettings{
 		DebugMode: false,
 		Log:       log.New(ioutil.Discard, "", 0),
+		//Log: log.New(os.Stderr, "smartcrop: ", log.Lshortfile),
 	}
 
 	return &standardAnalyzer{cropSettings: cropSettings}
@@ -211,7 +212,7 @@ func bounds(l float64) float64 {
 	return math.Min(math.Max(l, 0.0), 255)
 }
 
-func importance(crop *cropInfo, x, y int) float64 {
+func importance(crop cropInfo, x, y int) float64 {
 	if crop.X > x || x >= crop.X+crop.Width || crop.Y > y || y >= crop.Y+crop.Height {
 		return outsideImportance
 	}
@@ -234,7 +235,7 @@ func importance(crop *cropInfo, x, y int) float64 {
 	return s + d
 }
 
-func score(output *image.RGBA, crop *cropInfo) Score {
+func score(output *image.RGBA, crop cropInfo) Score {
 	height := output.Bounds().Dx()
 	width := output.Bounds().Dy()
 	score := Score{}
@@ -242,19 +243,12 @@ func score(output *image.RGBA, crop *cropInfo) Score {
 	// same loops but with downsampling
 	for y := 0; y <= height-scoreDownSample; y += scoreDownSample {
 		for x := 0; x <= width-scoreDownSample; x += scoreDownSample {
-
-			//for y := 0; y < height; y++ {
-			//for x := 0; x < width; x++ {
-
 			c := output.RGBAAt(x, y)
-
 			r8 := float64(c.R)
 			g8 := float64(c.G)
 			b8 := float64(c.B)
-
-			imp := importance(crop, int(x), int(y))
+			imp := importance(crop, x, y)
 			det := g8 / 255.0
-
 			score.Skin += r8 / 255.0 * (det + skinBias) * imp
 			score.Detail += det * imp
 			score.Saturation += b8 / 255.0 * (det + saturationBias) * imp
@@ -265,7 +259,7 @@ func score(output *image.RGBA, crop *cropInfo) Score {
 	return score
 }
 
-func drawDebugCrop(topCrop *cropInfo, o *image.RGBA) {
+func drawDebugCrop(topCrop cropInfo, o *image.RGBA) {
 	w := o.Bounds().Size().X
 	h := o.Bounds().Size().Y
 
@@ -319,7 +313,7 @@ func analyse(settings CropSettings, img *image.RGBA, cropWidth, cropHeight, real
 	now = time.Now()
 	for _, crop := range cs {
 		nowIn := time.Now()
-		crop.Score = score(o, &crop)
+		crop.Score = score(o, crop)
 		log.Println("Time elapsed single-score:", time.Since(nowIn))
 		if crop.Score.Total > topScore {
 			topCrop = crop
@@ -329,23 +323,38 @@ func analyse(settings CropSettings, img *image.RGBA, cropWidth, cropHeight, real
 	log.Println("Time elapsed score:", time.Since(now))
 
 	if settings.DebugMode {
-		drawDebugCrop(&topCrop, o)
+		drawDebugCrop(topCrop, o)
 		debugOutput(true, o, "final")
 	}
 	return image.Rect(topCrop.X, topCrop.Y, topCrop.X+topCrop.Width, topCrop.Y+topCrop.Height), nil
 }
 
 func saturation(c color.RGBA) float64 {
-	r8 := float64(c.R)
-	g8 := float64(c.G)
-	b8 := float64(c.B)
+	cMax, cMin := uint8(0), uint8(255)
+	if c.R > cMax {
+		cMax = c.R
+	}
+	if c.R < cMin {
+		cMin = c.R
+	}
+	if c.G > cMax {
+		cMax = c.G
+	}
+	if c.G < cMin {
+		cMin = c.G
+	}
+	if c.B > cMax {
+		cMax = c.B
+	}
+	if c.B < cMin {
+		cMin = c.B
+	}
 
-	maximum := math.Max(math.Max(r8/255.0, g8/255.0), b8/255.0)
-	minimum := math.Min(math.Min(r8/255.0, g8/255.0), b8/255.0)
-
-	if maximum == minimum {
+	if cMax == cMin {
 		return 0
 	}
+	maximum := float64(cMax) / 255.0
+	minimum := float64(cMin) / 255.0
 
 	l := (maximum + minimum) / 2.0
 	d := maximum - minimum
@@ -358,23 +367,10 @@ func saturation(c color.RGBA) float64 {
 }
 
 func cie(c color.RGBA) float64 {
-	/*
-		r, g, b, _ := c.RGBA()
-		r8 := float64(r >> 8)
-		g8 := float64(g >> 8)
-		b8 := float64(b >> 8)
-	*/
-
 	return 0.5126*float64(c.B) + 0.7152*float64(c.G) + 0.0722*float64(c.R)
 }
 
 func skinCol(c color.RGBA) float64 {
-	/*
-		r, g, b, _ := c.RGBA()
-		r8 := float64(r >> 8)
-		g8 := float64(g >> 8)
-		b8 := float64(b >> 8)
-	*/
 	r8, g8, b8 := float64(c.R), float64(c.G), float64(c.B)
 
 	mag := math.Sqrt(r8*r8 + g8*g8 + b8*b8)
