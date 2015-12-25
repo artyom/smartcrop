@@ -236,7 +236,30 @@ func scores(output *image.RGBA, crops []image.Rectangle) []float64 {
 			b8 := float64(c.B)
 			det := g8 / 255.0
 			for i, crop := range crops {
-				imp := importance(crop, x, y)
+				// inlined importance() function
+				var imp float64
+				if crop.Min.X > x || x >= crop.Max.X || crop.Min.Y > y || y >= crop.Max.Y {
+					imp = outsideImportance
+				} else {
+					xf := float64(x-crop.Min.X) / float64(crop.Dx())
+					yf := float64(y-crop.Min.Y) / float64(crop.Dy())
+					px := math.Abs(0.5-xf) * 2.0
+					py := math.Abs(0.5-yf) * 2.0
+					dx := math.Max(px-1.0+edgeRadius, 0.0)
+					dy := math.Max(py-1.0+edgeRadius, 0.0)
+					d := (dx*dx + dy*dy) * edgeWeight
+					s := 1.41 - math.Sqrt(px*px+py*py)
+					if ruleOfThirds {
+						// inlined thirds() calls for px
+						// and py
+						pxx := (math.Mod(px-(1.0/3.0)+1.0, 2.0)*0.5 - 0.5) * 16.0
+						pxThirds := math.Max(1.0-pxx*pxx, 0.0)
+						pyy := (math.Mod(py-(1.0/3.0)+1.0, 2.0)*0.5 - 0.5) * 16.0
+						pyThirds := math.Max(1.0-pyy*pyy, 0.0)
+						s += (math.Max(0.0, s+d+0.5) * 1.2) * (pxThirds + pyThirds)
+					}
+					imp = s + d
+				}
 				s := cropScores[i]
 				s.Skin += r8 / 255.0 * (det + skinBias) * imp
 				s.Detail += det * imp
