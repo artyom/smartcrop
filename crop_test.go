@@ -46,6 +46,24 @@ type SubImager interface {
 	SubImage(r image.Rectangle) image.Image
 }
 
+func BenchmarkCrop(b *testing.B) {
+	fi, err := os.Open(testFile)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer fi.Close()
+	img, _, err := image.Decode(fi)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := SmartCrop(img, 250, 250); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
 func TestCrop(t *testing.T) {
 	fi, err := os.Open(testFile)
 	if err != nil {
