@@ -96,25 +96,6 @@ func TestCrop(t *testing.T) {
 	*/
 }
 
-func BenchmarkEdge(b *testing.B) {
-	fname := "24391757.jpg"
-	fi, err := os.Open("./samples/" + fname)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer fi.Close()
-	img, _, err := image.Decode(fi)
-	if err != nil {
-		b.Error(err)
-	}
-	rgbaImg := toRGBA(img)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		o := image.NewRGBA(img.Bounds())
-		edgeDetect(rgbaImg, o)
-	}
-}
-
 func BenchmarkImageDir(b *testing.B) {
 
 	b.StopTimer()
