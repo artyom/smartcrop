@@ -37,6 +37,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"runtime"
 	"time"
 
 	"github.com/bamiaux/rez"
@@ -260,6 +261,7 @@ func scores(output *image.RGBA, crops []image.Rectangle) []float64 {
 					}
 					imp = s + d
 				}
+
 				s := cropScores[i]
 				s.Skin += r8 / 255.0 * (det + skinBias) * imp
 				s.Detail += det * imp
@@ -312,14 +314,29 @@ func analyse(settings CropSettings, img *image.RGBA, cropWidth, cropHeight, real
 	log.Println("Time elapsed crops:", time.Since(now), len(cs))
 
 	now = time.Now()
-	cropScores := scores(o, cs)
-	log.Println("Time elapsed scores:", time.Since(now))
-	for i, crop := range cs {
-		if cropScores[i] > topScore {
-			topCrop = crop
-			topScore = cropScores[i]
+	cpus := runtime.NumCPU()
+	resCh := make([]chan []float64, 0, cpus)
+	for i := 0; i < len(cs); i += cpus {
+		end := i + cpus
+		if end > len(cs) {
+			end = len(cs)
+		}
+		ch := make(chan []float64)
+		go func(img *image.RGBA, cs []image.Rectangle, ch chan []float64) { ch <- scores(img, cs) }(o, cs[i:end], ch)
+		resCh = append(resCh, ch)
+	}
+	var i int
+	for _, ch := range resCh {
+		scores := <-ch
+		for _, score := range scores {
+			if score > topScore {
+				topCrop = cs[i]
+				topScore = score
+			}
+			i++
 		}
 	}
+	log.Println("Time elapsed scores:", time.Since(now))
 
 	if settings.DebugMode {
 		drawDebugCrop(topCrop, o)
