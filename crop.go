@@ -75,7 +75,7 @@ const (
 
 //CropSettings contains options to
 //change cropping behaviour
-type CropSettings struct {
+type cropSettings struct {
 	DebugMode bool
 	Log       *log.Logger
 }
@@ -84,17 +84,17 @@ type CropSettings struct {
 //and returns the best possible crop with the given
 //width and height
 //returns an error if invalid
-type Analyzer interface {
+type analyzer interface {
 	FindBestCrop(img image.Image, width, height int) (image.Rectangle, error)
 }
 
 type standardAnalyzer struct {
-	cropSettings CropSettings
+	cropSettings cropSettings
 }
 
 //NewAnalyzer returns a new analyzer with default settings
-func NewAnalyzer() Analyzer {
-	cropSettings := CropSettings{
+func newAnalyzer() analyzer {
+	cropSettings := cropSettings{
 		DebugMode: false,
 		Log:       log.New(ioutil.Discard, "", 0),
 		//Log: log.New(os.Stderr, "smartcrop: ", log.Lshortfile),
@@ -104,7 +104,7 @@ func NewAnalyzer() Analyzer {
 }
 
 //NewAnalyzerWithCropSettings returns a new analyzer with the given settings
-func NewAnalyzerWithCropSettings(cropSettings CropSettings) Analyzer {
+func newAnalyzerWithCropSettings(cropSettings cropSettings) analyzer {
 	if cropSettings.Log == nil {
 		cropSettings.Log = log.New(ioutil.Discard, "", 0)
 	}
@@ -175,8 +175,8 @@ func (o standardAnalyzer) FindBestCrop(img image.Image, width, height int) (imag
 
 // SmartCrop applies the smartcrop algorithms on the the given image and returns
 // the top crop or an error if something went wrong.
-func SmartCrop(img image.Image, width, height int) (image.Rectangle, error) {
-	analyzer := NewAnalyzer()
+func Crop(img image.Image, width, height int) (image.Rectangle, error) {
+	analyzer := newAnalyzer()
 	return analyzer.FindBestCrop(img, width, height)
 }
 
@@ -303,7 +303,7 @@ func drawDebugCrop(topCrop image.Rectangle, o *image.RGBA) {
 	}
 }
 
-func analyse(settings CropSettings, img *image.RGBA, cropWidth, cropHeight, realMinScale float64) (image.Rectangle, error) {
+func analyse(settings cropSettings, img *image.RGBA, cropWidth, cropHeight, realMinScale float64) (image.Rectangle, error) {
 	log := settings.Log
 	o := dissect(img)
 

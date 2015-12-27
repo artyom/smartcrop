@@ -19,7 +19,7 @@ func ExampleCrop() {
 		log.Fatal(err)
 	}
 
-	topCrop, err := SmartCrop(img, 250, 250)
+	topCrop, err := Crop(img, 250, 250)
 	if err != nil {
 		log.Fatal(err)
 	}

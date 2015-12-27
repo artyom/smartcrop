@@ -58,7 +58,7 @@ func BenchmarkCrop(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := SmartCrop(img, 250, 250); err != nil {
+		if _, err := Crop(img, 250, 250); err != nil {
 			b.Error(err)
 		}
 	}
@@ -76,7 +76,7 @@ func TestCrop(t *testing.T) {
 		t.Error(err)
 	}
 
-	topCrop, err := SmartCrop(img, 250, 250)
+	topCrop, err := Crop(img, 250, 250)
 	if err != nil {
 		t.Error(err)
 	}
@@ -117,7 +117,7 @@ func BenchmarkImageDir(b *testing.B) {
 				b.Error(err)
 			}
 
-			topCrop, err := SmartCrop(img, 900, 500)
+			topCrop, err := Crop(img, 900, 500)
 			if err != nil {
 				b.Error(err)
 			}
