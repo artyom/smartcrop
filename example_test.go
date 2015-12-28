@@ -1,13 +1,15 @@
-package smartcrop
+package smartcrop_test
 
 import (
 	"fmt"
 	"image"
 	"log"
 	"os"
+
+	"github.com/artyom/smartcrop"
 )
 
-func ExampleCrop() {
+func Example() {
 	fi, err := os.Open("./samples/gopher.jpg")
 	if err != nil {
 		log.Fatal(err)
@@ -19,7 +21,7 @@ func ExampleCrop() {
 		log.Fatal(err)
 	}
 
-	topCrop, err := Crop(img, 250, 250)
+	topCrop, err := smartcrop.Crop(img, 250, 250)
 	if err != nil {
 		log.Fatal(err)
 	}
